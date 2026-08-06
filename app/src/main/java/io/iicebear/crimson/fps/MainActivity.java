@@ -10,22 +10,30 @@ import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.button.MaterialButton;
+
 public class MainActivity extends Activity {
 
     private TextView moduleStatus;
     private ImageView moduleStatusIcon;
+
+    private int themeColor(int attrRes) {
+        TypedValue tv = new TypedValue();
+        getTheme().resolveAttribute(attrRes, tv, true);
+        return tv.data;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +98,7 @@ public class MainActivity extends Activity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         for (int i = 0; i < menu.size(); i++) {
             MenuItem item = menu.getItem(i);
-            if (item.getIcon() != null) item.getIcon().setTint(getColor(R.color.ink));
+            if (item.getIcon() != null) item.getIcon().setTint(themeColor(android.R.attr.textColorPrimary));
         }
         return true;
     }
@@ -143,7 +151,7 @@ public class MainActivity extends Activity {
 
         TextView title = new TextView(this);
         title.setText("Supported Apps by Spoofed Device");
-        title.setTextColor(getColor(R.color.ink));
+        title.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurface));
         title.setTextSize(20);
         title.setTypeface(null, android.graphics.Typeface.BOLD);
         title.setPadding(0, 16, 0, 12);
@@ -155,7 +163,7 @@ public class MainActivity extends Activity {
 
             TextView header = new TextView(this);
             header.setText(device + ":");
-            header.setTextColor(getColor(R.color.ink));
+            header.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurface));
             header.setTextSize(18);
             header.setTypeface(null, android.graphics.Typeface.BOLD);
             header.setPadding(0, 12, 0, 4);
@@ -169,16 +177,15 @@ public class MainActivity extends Activity {
 
             TextView list = new TextView(this);
             list.setText(sb.toString());
-            list.setTextColor(getColor(R.color.ink));
+            list.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurface));
             list.setTextSize(14);
             list.setPadding(16, 0, 0, 8);
             container.addView(list);
         }
 
-        Button closeBtn = new Button(this);
+        MaterialButton closeBtn = new MaterialButton(this);
         closeBtn.setText("Close");
-        closeBtn.setBackgroundResource(R.drawable.btn_neo);
-        closeBtn.setTextColor(getColor(R.color.ink));
+        closeBtn.setTextColor(themeColor(com.google.android.material.R.attr.colorOnPrimary));
         closeBtn.setTypeface(null, android.graphics.Typeface.BOLD);
         closeBtn.setAllCaps(false);
         closeBtn.setPadding(30, 14, 30, 14);
