@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Crimson" parent="@android:style/Theme.Material.Light">
+        <item name="android:windowBackground">@color/cream</item>
+        <item name="android:statusBarColor">@color/cream</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:actionBarStyle">@style/NeoActionBar</item>
+    </style>
+
+    <style name="NeoActionBar" parent="@android:style/Widget.Material.ActionBar.Solid">
+        <item name="android:background">@color/pink</item>
+        <item name="android:titleTextStyle">@style/NeoTitleText</item>
+    </style>
+
+    <style name="NeoTitleText">
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+</resources>
