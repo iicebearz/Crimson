@@ -2,6 +2,11 @@ plugins {
     id 'com.android.application'
 }
 
+def ks = rootProject.file('release.keystore')
+def sp = new Properties()
+def spFile = rootProject.file('local.properties')
+if (spFile.exists()) sp.load(spFile.newInputStream())
+
 android {
     compileSdk 34
 
@@ -14,10 +19,20 @@ android {
         namespace 'io.iicebear.crimson.fps'
     }
 
+    signingConfigs {
+        release {
+            storeFile ks
+            storePassword sp.getProperty('signing.storePassword', '')
+            keyAlias sp.getProperty('signing.keyAlias', '')
+            keyPassword sp.getProperty('signing.keyPassword', '')
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             shrinkResources false
+            signingConfig ks.exists() ? signingConfigs.release : null
         }
     }
 
@@ -32,4 +47,5 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     compileOnly fileTree(dir: 'libs/compile_only', include: ['*.jar'])
+    testImplementation 'junit:junit:4.13.2'
 }

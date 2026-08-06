@@ -22,8 +22,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.Map;
-
 public class MainActivity extends Activity {
 
     private TextView moduleStatus;
@@ -54,7 +52,7 @@ public class MainActivity extends Activity {
         setTextSafely(R.id.buildNumber, Build.ID + "\n(Security Patch: " + Build.VERSION.SECURITY_PATCH + ")");
         setTextSafely(R.id.baseOS, Build.VERSION.BASE_OS != null ? Build.VERSION.BASE_OS : "N/A");
         setTextSafely(R.id.Processor, getReadableSoC() + " (" + Build.HARDWARE + ")");
-        setTextSafely(R.id.compatibleApps, "Aplikasi Kompatibel: " + CRIMSOON.devicePackageMap.values().stream().mapToInt(a -> a.length).sum());
+        setTextSafely(R.id.compatibleApps, "Aplikasi Kompatibel: " + SpoofCatalog.packageCount());
     }
 
     private String getReadableSoC() {
@@ -152,9 +150,8 @@ public class MainActivity extends Activity {
         title.setGravity(Gravity.CENTER);
         container.addView(title);
 
-        for (Map.Entry<String, String[]> entry : CRIMSOON.devicePackageMap.entrySet()) {
-            String device = entry.getKey();
-            String[] pkgs = entry.getValue();
+        for (String device : SpoofCatalog.deviceNames()) {
+            String[] pkgs = SpoofCatalog.packagesFor(device);
 
             TextView header = new TextView(this);
             header.setText(device + ":");
