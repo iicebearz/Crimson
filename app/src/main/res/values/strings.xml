@@ -33,8 +33,9 @@
     <string name="add_package_device">Target Device</string>
     <string name="btn_add">Add</string>
     <string name="btn_cancel">Cancel</string>
-    <string name="added_toast">Package added</string>
-    <string name="duplicate_toast">Package already on this device</string>
+    <string name="added_toast">input package berhasil</string>
+    <string name="duplicate_toast">package sudah ada</string>
+    <string name="empty_package_toast">Package tidak boleh kosong</string>
 
     <string name="title_credits">Credits</string>
     <string name="credit_author">Crimson</string>

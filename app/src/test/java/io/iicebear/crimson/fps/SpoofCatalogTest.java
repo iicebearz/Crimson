@@ -42,7 +42,7 @@ public class SpoofCatalogTest {
     @Test
     public void knownDevice_returnsPackages() {
         assertNotNull(SpoofCatalog.packagesFor("Nubia"));
-        assertEquals(15, SpoofCatalog.packagesFor("Nubia").length);
+        assertEquals(54, SpoofCatalog.packagesFor("Nubia").length);
     }
 
     @Test
@@ -73,9 +73,10 @@ public class SpoofCatalogTest {
     }
 
     @Test
-    public void addPackage_customOverridesBuiltin() {
-        SpoofCatalog.addPackage("Lenovo Legion", "com.proximabeta.mf.uamo");
-        assertEquals("Lenovo Legion", SpoofCatalog.findDeviceForPackage("com.proximabeta.mf.uamo"));
+    public void addPackage_builtinPackage_rejectedGlobally() {
+        // com.proximabeta.mf.uamo is builtin in SAMSUNGS25U
+        assertTrue(!SpoofCatalog.addPackage("Lenovo Legion", "com.proximabeta.mf.uamo"));
+        assertEquals("SAMSUNGS25U", SpoofCatalog.findDeviceForPackage("com.proximabeta.mf.uamo"));
     }
 
     @Test

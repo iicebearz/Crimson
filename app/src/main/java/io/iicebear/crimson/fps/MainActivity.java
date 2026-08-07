@@ -308,17 +308,19 @@ public class MainActivity extends Activity {
                 .setPositiveButton(R.string.btn_add, (d, w) -> {
                     String pkg = pkgInput.getText().toString().trim();
                     if (pkg.isEmpty()) {
-                        Toast.makeText(this, "Package must not be empty", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, R.string.empty_package_toast, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (SpoofCatalog.exists(pkg)) {
+                        Toast.makeText(this, R.string.duplicate_toast, Toast.LENGTH_SHORT).show();
                         return;
                     }
                     String device = (String) deviceSpinner.getSelectedItem();
-                    boolean added = SpoofCatalog.addPackage(device, pkg);
+                    SpoofCatalog.addPackage(device, pkg);
                     CatalogStore.save(this, SpoofCatalog.toBlob());
                     refreshAppCount();
                     pkgInput.setText("");
-                    Toast.makeText(this,
-                            added ? R.string.added_toast : R.string.duplicate_toast,
-                            Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.added_toast, Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton(R.string.btn_cancel, null)
                 .show();
