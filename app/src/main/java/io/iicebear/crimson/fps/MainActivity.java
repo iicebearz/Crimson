@@ -160,7 +160,6 @@ public class MainActivity extends Activity {
     private void setupLinks() {
         setupLink(R.id.githubLink, "https://github.com/iicebearz");
         setupLink(R.id.telegramLink, "https://t.me/iancloudID");
-        setupLink(R.id.tusukikanLink, "https://telegra.ph/Iam-a-IceBearr-02-02");
 
         manageButton.setOnClickListener(v -> showAddPackageDialog());
         supportedCard.setOnClickListener(v -> showSupportedAppsDialog());
