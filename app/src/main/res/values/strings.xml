@@ -47,8 +47,7 @@
     <string name="link_github_sub">Stay updated on projects</string>
     <string name="link_telegram">Join our Telegram Channel</string>
     <string name="link_telegram_sub">Connect with the community</string>
-    <string name="link_tusukikan">Give support with shortlink</string>
-    <string name="link_tusukikan_sub">Your support means a lot</string>
+
     <string name="user_profile_label">User Profile</string>
 
     <string name="nav_dashboard">Dashboard</string>

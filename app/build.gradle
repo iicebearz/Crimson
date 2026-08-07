@@ -15,7 +15,7 @@ android {
         minSdk 28
         targetSdk 34
         versionCode 20
-        versionName "Stable 30/12/25"
+        versionName "V1 stabil"
         namespace 'io.iicebear.crimson.fps'
     }
 
