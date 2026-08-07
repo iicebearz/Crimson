@@ -1,6 +1,6 @@
 # CrimsonFps
 
-Xposed module for device spoofing — Android 10+ (API 28+).
+Xposed module for device spoofing with Lsposed
 
 ## Features
 
