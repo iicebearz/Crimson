@@ -32,10 +32,10 @@ final class DeviceSpoof {
                 props("BRAND", "OnePlus", "MANUFACTURER", "OnePlus", "MODEL", "PJZ110", "DEVICE", "PJZ110", "BOARD", "qcom", "HARDWARE", "qcom"));
         DEVICES.put("OPPOX7Ultra",
                 props("BRAND", "oppo", "MANUFACTURER", "oppo", "MODEL", "PHY110", "DEVICE", "PHY110", "BOARD", "qcom", "HARDWARE", "qcom"));
-        DEVICES.put("Xiaomi14",
-                props("BRAND", "Xiaomi", "MANUFACTURER", "Xiaomi", "MODEL", "23116PN5BC", "DEVICE", "23116PN5BC", "BOARD", "qcom", "HARDWARE", "qcom"));
-        DEVICES.put("PocoF6Pro",
-                props("BRAND", "Xiaomi", "MANUFACTURER", "Xiaomi", "MODEL", "23117RK66C", "DEVICE", "23117RK66C", "BOARD", "qcom", "HARDWARE", "qcom"));
+        DEVICES.put("Xiaomi15Ultra",
+                props("BRAND", "Xiaomi", "MANUFACTURER", "Xiaomi", "MODEL", "25019PNF3C", "DEVICE", "xuanyuan", "PRODUCT", "xuanyuan", "BOARD", "qcom", "HARDWARE", "qcom"));
+        DEVICES.put("PocoF7Ultra",
+                props("BRAND", "Redmi", "MANUFACTURER", "Xiaomi", "MODEL", "24122RKC7G", "DEVICE", "miro", "PRODUCT", "miro", "BOARD", "qcom", "HARDWARE", "qcom"));
         DEVICES.put("iQOO13",
                 props("BRAND", "iQOO", "MANUFACTURER", "vivo", "MODEL", "I2401", "DEVICE", "I2401", "BOARD", "qcom", "HARDWARE", "qcom"));
         DEVICES.put("ROG9PRO",

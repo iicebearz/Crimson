@@ -43,8 +43,14 @@ public class CRIMSOON implements IXposedHookLoadPackage {
                     XposedHelpers.findClass("android.app.ActivityThread", cl), "currentApplication");
             Context ctxt = app.createPackageContext(
                     "io.iicebear.crimson.fps", Context.CONTEXT_IGNORE_SECURITY);
-            String blob = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_WORLD_READABLE)
-                    .getString(CatalogStore.KEY_BLOB, "");
+            String blob;
+            try {
+                blob = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_WORLD_READABLE)
+                        .getString(CatalogStore.KEY_BLOB, "");
+            } catch (SecurityException e) {
+                blob = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_PRIVATE)
+                        .getString(CatalogStore.KEY_BLOB, "");
+            }
             SpoofCatalog.fromBlob(blob);
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": custom spoofs unavailable: " + t.getMessage());

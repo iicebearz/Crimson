@@ -270,11 +270,9 @@ public class MainActivity extends Activity {
             File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
             File[] apkFiles = dir.listFiles(f -> f.getName().endsWith(".apk"));
             if (apkFiles == null || apkFiles.length == 0) return null;
-            File latest = apkFiles[0];
-            for (File f : apkFiles) {
-                if (f.lastModified() > latest.lastModified()) latest = f;
-            }
-            return latest;
+            return java.util.Arrays.stream(apkFiles)
+                    .max(java.util.Comparator.comparing(File::lastModified))
+                    .orElse(null);
         } finally { cursor.close(); }
     }
 
@@ -315,7 +313,7 @@ public class MainActivity extends Activity {
                         Toast.makeText(this, R.string.duplicate_toast, Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    String device = (String) deviceSpinner.getSelectedItem();
+                    String device = SpoofCatalog.keyForLabel((String) deviceSpinner.getSelectedItem());
                     SpoofCatalog.addPackage(device, pkg);
                     CatalogStore.save(this, SpoofCatalog.toBlob());
                     refreshAppCount();

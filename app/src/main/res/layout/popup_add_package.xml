@@ -23,6 +23,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:autoSizeMaxTextSize="13sp"
+        android:autoSizeMinTextSize="9sp"
+        android:autoSizeTextType="uniform"
         android:text="@string/add_package_device"
         android:textColor="?android:attr/textColorSecondary"
         android:textSize="13sp" />
