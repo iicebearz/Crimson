@@ -728,14 +728,16 @@
                             <!-- Avatar container with green border -->
                             <FrameLayout
                                 android:layout_width="72dp"
-                                android:layout_height="72dp">
+                                android:layout_height="72dp"
+                                android:background="@drawable/bg_avatar_border">
 
                                 <ImageView
                                     android:id="@+id/profileAvatar"
-                                    android:layout_width="72dp"
-                                    android:layout_height="72dp"
-                                    android:background="@drawable/bg_avatar_border"
-                                    android:padding="3dp"
+                                    android:layout_width="66dp"
+                                    android:layout_height="66dp"
+                                    android:layout_gravity="center"
+                                    android:background="@drawable/bg_avatar_fill"
+                                    android:clipToOutline="true"
                                     android:scaleType="centerCrop"
                                     android:src="@drawable/ic_launcher" />
 
