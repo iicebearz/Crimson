@@ -1,11 +1,16 @@
 package io.iicebear.crimson.fps;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 final class SpoofCatalog {
 
     private SpoofCatalog() {}
+
+    private static final Map<String, List<String>> CUSTOM = new LinkedHashMap<>();
 
     private static final Map<String, String[]> DEVICE_PACKAGES = new HashMap<String, String[]>() {{
         put("SAMSUNGS25U", new String[]{"com.proximabeta.mf.uamo", "com.garena.game.codm", "com.garena.game.kgvn", "com.tencent.tmgp.kr.codm", "com.vng.codmvn"});
@@ -23,6 +28,9 @@ final class SpoofCatalog {
     }};
 
     static String findDeviceForPackage(String pkg) {
+        for (Map.Entry<String, List<String>> e : CUSTOM.entrySet()) {
+            if (e.getValue().contains(pkg)) return e.getKey();
+        }
         for (Map.Entry<String, String[]> e : DEVICE_PACKAGES.entrySet()) {
             for (String candidate : e.getValue()) {
                 if (candidate.equals(pkg)) return e.getKey();
@@ -32,17 +40,69 @@ final class SpoofCatalog {
     }
 
     static String[] packagesFor(String device) {
-        String[] pkgs = DEVICE_PACKAGES.get(device);
-        return pkgs != null ? pkgs : new String[0];
+        List<String> merged = new ArrayList<>();
+        String[] builtin = DEVICE_PACKAGES.get(device);
+        if (builtin != null) {
+            for (String p : builtin) merged.add(p);
+        }
+        List<String> custom = CUSTOM.get(device);
+        if (custom != null) {
+            for (String p : custom) {
+                if (!merged.contains(p)) merged.add(p);
+            }
+        }
+        return merged.toArray(new String[0]);
     }
 
     static String[] deviceNames() {
-        return DEVICE_PACKAGES.keySet().toArray(new String[0]);
+        List<String> names = new ArrayList<>();
+        for (String d : DEVICE_PACKAGES.keySet()) names.add(d);
+        for (String d : CUSTOM.keySet()) {
+            if (!names.contains(d)) names.add(d);
+        }
+        return names.toArray(new String[0]);
     }
 
     static int packageCount() {
         int total = 0;
-        for (String[] pkgs : DEVICE_PACKAGES.values()) total += pkgs.length;
+        for (String d : deviceNames()) total += packagesFor(d).length;
         return total;
+    }
+
+    static boolean addPackage(String device, String pkg) {
+        CUSTOM.computeIfAbsent(device, k -> new ArrayList<>());
+        List<String> list = CUSTOM.get(device);
+        if (list.contains(pkg)) return false;
+        list.add(pkg);
+        return true;
+    }
+
+    static void clearCustom() {
+        CUSTOM.clear();
+    }
+
+    static String toBlob() {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, List<String>> e : CUSTOM.entrySet()) {
+            if (e.getValue().isEmpty()) continue;
+            sb.append(e.getKey()).append('=');
+            sb.append(String.join(",", e.getValue()));
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
+
+    static void fromBlob(String blob) {
+        clearCustom();
+        if (blob == null || blob.isEmpty()) return;
+        for (String line : blob.split("\n")) {
+            int eq = line.indexOf('=');
+            if (eq <= 0) continue;
+            String device = line.substring(0, eq).trim();
+            String[] pkgs = line.substring(eq + 1).split(",");
+            for (String p : pkgs) {
+                if (!p.isEmpty()) addPackage(device, p.trim());
+            }
+        }
     }
 }

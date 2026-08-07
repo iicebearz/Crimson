@@ -2,20 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     
-    <uses-permission
-        android:name="android.permission.INTERNET" />
-    <!-- Allows the app to write the contents of your shared storage. -->
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <!-- Allows the app to read the contents of your shared storage. -->
-    <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <!-- Allows the app to access the phone features of the device. This permission allows the app to determine the phone number and device IDs, whether a call is active, and the remote number connected by a call. -->
-    <uses-permission
-        android:name="android.permission.READ_PHONE_STATE" />
     <!-- Allows an app to see all installed packages. -->
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission
+        android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="false"
@@ -36,7 +27,17 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_provider_paths" />
+        </provider>
+
         <meta-data
             android:name="xposedmodule"
             android:value="true" />

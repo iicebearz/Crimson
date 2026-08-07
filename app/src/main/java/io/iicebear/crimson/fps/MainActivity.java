@@ -1,33 +1,55 @@
 package io.iicebear.crimson.fps;
 
-import io.iicebear.crimson.fps.BuildConfig;
-
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.DownloadManager;
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.AnimationUtils;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.FileProvider;
+
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import java.io.File;
 
 public class MainActivity extends Activity {
 
     private TextView moduleStatus;
-    private ImageView moduleStatusIcon;
+    private View statusDot;
+    private TextView moduleVersion;
+    private TextView heroAppCount;
+
+    private TextView deviceProcessor, deviceAndroid, deviceAbi, deviceModel, deviceName, buildNumber, securityPatch;
+
+    private View supportedCard;
+    private MaterialButton manageButton;
+
+    private View dashboardView, userView;
+    private View navDashboardItem, navUserItem;
+    private ImageView navDashboardIcon, navUserIcon;
+    private TextView navDashboardLabel, navUserLabel;
 
     private int themeColor(int attrRes) {
         TypedValue tv = new TypedValue();
@@ -39,81 +61,125 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        initializeViews();
+        bindViews();
         setDeviceInformation();
-        setModuleStatusUI();
+        setModuleStatus();
         setupLinks();
+        setupTopBar();
+        setupBottomNav();
+        runEntranceAnimations();
     }
 
-    private void initializeViews() {
-        findViewById(R.id.supportLink).setOnClickListener(v -> showSupportedAppsDialog());
+    private void bindViews() {
         moduleStatus = findViewById(R.id.module_status);
-        moduleStatusIcon = findViewById(R.id.moduleStatusIcon);
+        statusDot = findViewById(R.id.statusDot);
+        moduleVersion = findViewById(R.id.moduleVersion);
+        heroAppCount = findViewById(R.id.supportedAppsTitle);
+
+        deviceProcessor = findViewById(R.id.Processor);
+        deviceName = findViewById(R.id.deviceName);
+        deviceAndroid = findViewById(R.id.systemVersion);
+        deviceAbi = findViewById(R.id.systemAbi);
+        deviceModel = findViewById(R.id.device);
+        buildNumber = findViewById(R.id.buildNumber);
+        securityPatch = findViewById(R.id.securityPatch);
+
+        supportedCard = findViewById(R.id.supportedCard);
+        manageButton = findViewById(R.id.manageButton);
+
+        dashboardView = findViewById(R.id.dashboardView);
+        userView = findViewById(R.id.userView);
+        navDashboardItem = findViewById(R.id.navDashboardItem);
+        navUserItem = findViewById(R.id.navUserItem);
+        navDashboardIcon = findViewById(R.id.navDashboardIcon);
+        navUserIcon = findViewById(R.id.navUserIcon);
+        navDashboardLabel = findViewById(R.id.navDashboardLabel);
+        navUserLabel = findViewById(R.id.navUserLabel);
     }
 
     private void setDeviceInformation() {
-        setTextSafely(R.id.moduleVersion, BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
-        setTextSafely(R.id.systemVersion, Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
-        setTextSafely(R.id.systemAbi, Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : "N/A");
-        setTextSafely(R.id.deviceName, Build.BRAND + " " + Build.BOARD);
-        setTextSafely(R.id.device, Build.MANUFACTURER + " " + Build.MODEL);
-        setTextSafely(R.id.buildNumber, Build.ID + "\n(Security Patch: " + Build.VERSION.SECURITY_PATCH + ")");
-        setTextSafely(R.id.baseOS, Build.VERSION.BASE_OS != null ? Build.VERSION.BASE_OS : "N/A");
-        setTextSafely(R.id.Processor, getReadableSoC() + " (" + Build.HARDWARE + ")");
-        setTextSafely(R.id.compatibleApps, "Aplikasi Kompatibel: " + SpoofCatalog.packageCount());
+        moduleVersion.setText(BuildConfig.VERSION_NAME + " (v" + BuildConfig.VERSION_CODE + ")");
+        ((TextView) findViewById(R.id.profileVersion))
+                .setText(BuildConfig.VERSION_NAME + " (v" + BuildConfig.VERSION_CODE + ")");
+        refreshAppCount();
+
+        deviceProcessor.setText(DeviceInfo.soc() + " (" + DeviceInfo.board() + ")");
+        deviceAndroid.setText(DeviceInfo.android());
+        deviceAbi.setText(DeviceInfo.abi());
+        deviceModel.setText(DeviceInfo.model());
+        deviceName.setText(DeviceInfo.deviceName());
+        buildNumber.setText(DeviceInfo.buildNumber());
+        securityPatch.setText(DeviceInfo.securityPatch());
     }
 
-    private String getReadableSoC() {
-        String hw = Build.HARDWARE.toLowerCase();
-        if (hw.contains("qcom") || hw.contains("sm8") || hw.contains("sm7")) return "Qualcomm Snapdragon";
-        if (hw.contains("mt") || hw.contains("mediatek") || hw.contains("dimensity")) return "MediaTek";
-        if (hw.contains("kirin")) return "HiSilicon Kirin";
-        if (hw.contains("exynos")) return "Samsung Exynos";
-        if (hw.contains("tensor")) return "Google Tensor";
-        if (hw.contains("apple")) return "Apple Silicon";
-        return "Unknown SoC";
+    private void refreshAppCount() {
+        SpoofCatalog.fromBlob(CatalogStore.load(this));
+        heroAppCount.setText(getString(R.string.apps_supported_count, SpoofCatalog.packageCount()));
     }
 
-    private void setTextSafely(int viewId, String text) {
-        TextView tv = findViewById(viewId);
-        if (tv != null) {
-            tv.setText(text != null && !text.isEmpty() ? text : "N/A");
-        }
+    private void setModuleStatus() {
+        boolean active = isModuleActivated();
+        moduleStatus.setText(active ? getString(R.string.status_active) : getString(R.string.status_inactive));
+        statusDot.setBackgroundResource(active ? R.drawable.dot_active : R.drawable.dot_inactive);
     }
 
-	public static boolean isModuleActivated() {
-    	return false;
-	}
-
-	private void setModuleStatusUI() {
-    	boolean activated = isModuleActivated();
-    	moduleStatus.setText(activated ? "Modul aktif" : "Modul tidak aktif");
-    	moduleStatusIcon.setImageResource(
-        	activated ? R.drawable.ic_check_active : R.drawable.ic_check_inactive
-    	);
-	}
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        for (int i = 0; i < menu.size(); i++) {
-            MenuItem item = menu.getItem(i);
-            if (item.getIcon() != null) item.getIcon().setTint(themeColor(android.R.attr.textColorPrimary));
-        }
-        return true;
+    public static boolean isModuleActivated() {
+        return false;
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_refresh) {
-            refreshModuleStatus();
+    private void setupTopBar() {
+        findViewById(R.id.actionRefresh).setOnClickListener(v -> {
+            setModuleStatus();
+            refreshAppCount();
             Toast.makeText(this, "Status modul diperbarui", Toast.LENGTH_SHORT).show();
-            return true;
-        } else if (item.getItemId() == R.id.action_lsposed) {
-            openLsposed();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+        });
+        findViewById(R.id.actionSettings).setOnClickListener(v -> openLsposed());
+    }
+
+    private void setupBottomNav() {
+        navDashboardItem.setOnClickListener(v -> showPage(true));
+        navUserItem.setOnClickListener(v -> showPage(false));
+    }
+
+    private void showPage(boolean dashboard) {
+        dashboardView.setVisibility(dashboard ? View.VISIBLE : View.GONE);
+        userView.setVisibility(dashboard ? View.GONE : View.VISIBLE);
+
+        navDashboardItem.setBackgroundResource(dashboard ? R.drawable.nav_item_selected : 0);
+        navUserItem.setBackgroundResource(dashboard ? 0 : R.drawable.nav_item_selected);
+
+        navDashboardIcon.setColorFilter(dashboard ? getColor(R.color.primary) : getColor(R.color.text_secondary));
+        navUserIcon.setColorFilter(dashboard ? getColor(R.color.text_secondary) : getColor(R.color.primary));
+        navDashboardLabel.setTextColor(dashboard ? getColor(R.color.text_primary) : getColor(R.color.text_secondary));
+        navUserLabel.setTextColor(dashboard ? getColor(R.color.text_secondary) : getColor(R.color.text_primary));
+
+        (dashboard ? dashboardView : userView).startAnimation(
+                AnimationUtils.loadAnimation(this, R.anim.fade_in));
+    }
+
+    private void setupLinks() {
+        setupLink(R.id.githubLink, "https://github.com/iicebearz");
+        setupLink(R.id.telegramLink, "https://t.me/iancloudID");
+        setupLink(R.id.tusukikanLink, "https://telegra.ph/Iam-a-IceBearr-02-02");
+
+        manageButton.setOnClickListener(v -> showAddPackageDialog());
+        supportedCard.setOnClickListener(v -> showSupportedAppsDialog());
+
+        View updateRow = findViewById(R.id.updateLink);
+        if (updateRow != null) updateRow.setOnClickListener(v -> showUpdateDialog());
+    }
+
+    private void setupLink(int viewId, String url) {
+        View view = findViewById(viewId);
+        if (view == null) return;
+        view.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivity(intent);
+            } else {
+                Toast.makeText(this, "Tidak ada aplikasi untuk membuka tautan", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void openLsposed() {
@@ -128,9 +194,135 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void refreshModuleStatus() {
-        setModuleStatusUI();
-        setDeviceInformation();
+    private void showUpdateDialog() {
+        TextView statusView = new TextView(this);
+        statusView.setText("Checking for updates...");
+        statusView.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurface));
+        statusView.setTextSize(15);
+        statusView.setPadding(60, 40, 60, 20);
+
+        Dialog d = new AlertDialog.Builder(this)
+                .setView(statusView)
+                .setCancelable(false)
+                .show();
+
+        UpdateChecker.check(new UpdateChecker.Callback() {
+            @Override
+            public void onResult(String versionName, int versionCode, String apkUrl, String changelog) {
+                d.dismiss();
+                if (!UpdateChecker.isNewer(versionCode, BuildConfig.VERSION_CODE)) {
+                    Toast.makeText(MainActivity.this, "Up to date", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                String msg = "v" + versionName + " available\n\n" + changelog;
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Update Available")
+                        .setMessage(msg)
+                        .setPositiveButton("Download", (dialog, which) -> downloadAndInstall(apkUrl))
+                        .setNegativeButton("Later", null)
+                        .show();
+            }
+
+            @Override
+            public void onError(String error) {
+                d.dismiss();
+                Toast.makeText(MainActivity.this, "Update check failed: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void downloadAndInstall(String apkUrl) {
+        Toast.makeText(this, "Downloading...", Toast.LENGTH_SHORT).show();
+        long downloadId = UpdateChecker.downloadApk(this, apkUrl);
+
+        new Thread(() -> {
+            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            boolean complete = false;
+            while (!complete) {
+                try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+                DownloadManager.Query query = new DownloadManager.Query().setFilterById(downloadId);
+                Cursor cursor = dm.query(query);
+                if (cursor == null) break;
+                try {
+                    if (cursor.moveToFirst()) {
+                        int status = cursor.getInt(
+                                cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) { complete = true; }
+                        else if (status == DownloadManager.STATUS_FAILED) { return; }
+                    }
+                } finally { cursor.close(); }
+            }
+
+            File file = getDownloadedFile(dm, downloadId);
+            if (file != null && file.exists()) runOnUiThread(() -> installApk(file));
+        }).start();
+    }
+
+    private File getDownloadedFile(DownloadManager dm, long downloadId) {
+        DownloadManager.Query query = new DownloadManager.Query().setFilterById(downloadId);
+        Cursor cursor = dm.query(query);
+        if (cursor == null) return null;
+        try {
+            if (!cursor.moveToFirst()) return null;
+            String uriStr = cursor.getString(
+                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI));
+            Uri uri = Uri.parse(uriStr);
+            if ("file".equals(uri.getScheme())) return new File(uri.getPath());
+            File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File[] apkFiles = dir.listFiles(f -> f.getName().endsWith(".apk"));
+            if (apkFiles == null || apkFiles.length == 0) return null;
+            File latest = apkFiles[0];
+            for (File f : apkFiles) {
+                if (f.lastModified() > latest.lastModified()) latest = f;
+            }
+            return latest;
+        } finally { cursor.close(); }
+    }
+
+    private void installApk(File file) {
+        Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file);
+        Intent intent = new Intent(Intent.ACTION_VIEW)
+                .setDataAndType(uri, "application/vnd.android.package-archive")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            if (!getPackageManager().canRequestPackageInstalls()) {
+                startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:" + getPackageName())));
+                return;
+            }
+        }
+        startActivity(intent);
+    }
+
+    @android.annotation.SuppressLint("DefaultLocale")
+    private void showAddPackageDialog() {
+        View content = getLayoutInflater().inflate(R.layout.popup_add_package, null);
+        EditText pkgInput = content.findViewById(R.id.pkgInput);
+        Spinner deviceSpinner = content.findViewById(R.id.deviceSpinner);
+        deviceSpinner.setAdapter(new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, SpoofCatalog.deviceNames()));
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.add_package_title)
+                .setView(content)
+                .setPositiveButton(R.string.btn_add, (d, w) -> {
+                    String pkg = pkgInput.getText().toString().trim();
+                    if (pkg.isEmpty()) {
+                        Toast.makeText(this, "Package must not be empty", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    String device = (String) deviceSpinner.getSelectedItem();
+                    boolean added = SpoofCatalog.addPackage(device, pkg);
+                    CatalogStore.save(this, SpoofCatalog.toBlob());
+                    refreshAppCount();
+                    pkgInput.setText("");
+                    Toast.makeText(this,
+                            added ? R.string.added_toast : R.string.duplicate_toast,
+                            Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton(R.string.btn_cancel, null)
+                .show();
     }
 
     private void showSupportedAppsDialog() {
@@ -149,76 +341,45 @@ public class MainActivity extends Activity {
 
         LinearLayout container = dialog.findViewById(R.id.container);
 
-        TextView title = new TextView(this);
-        title.setText("Supported Apps by Spoofed Device");
-        title.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurface));
-        title.setTextSize(20);
-        title.setTypeface(null, android.graphics.Typeface.BOLD);
-        title.setPadding(0, 16, 0, 12);
-        title.setGravity(Gravity.CENTER);
-        container.addView(title);
+        android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder();
+        int titleStart = sb.length();
+        sb.append("Supported Apps by Spoofed Device\n\n");
+        sb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), titleStart, sb.length(), 0);
 
         for (String device : SpoofCatalog.deviceNames()) {
-            String[] pkgs = SpoofCatalog.packagesFor(device);
+            int devStart = sb.length();
+            sb.append(device).append(":\n");
+            sb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), devStart, sb.length(), 0);
 
-            TextView header = new TextView(this);
-            header.setText(device + ":");
-            header.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurface));
-            header.setTextSize(18);
-            header.setTypeface(null, android.graphics.Typeface.BOLD);
-            header.setPadding(0, 12, 0, 4);
-            container.addView(header);
-
-            StringBuilder sb = new StringBuilder();
-            for (String pkg : pkgs) {
+            for (String pkg : SpoofCatalog.packagesFor(device)) {
                 sb.append("• ").append(pkg).append("\n");
             }
-            if (sb.length() > 0) sb.setLength(sb.length() - 1);
-
-            TextView list = new TextView(this);
-            list.setText(sb.toString());
-            list.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurface));
-            list.setTextSize(14);
-            list.setPadding(16, 0, 0, 8);
-            container.addView(list);
+            sb.append("\n");
         }
 
-        MaterialButton closeBtn = new MaterialButton(this);
+        TextView content = new TextView(this);
+        content.setText(sb.toString());
+        content.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurface));
+        content.setTextSize(14);
+        container.addView(content);
+
+        TextView closeBtn = new TextView(this);
         closeBtn.setText("Close");
-        closeBtn.setTextColor(themeColor(com.google.android.material.R.attr.colorOnPrimary));
-        closeBtn.setTypeface(null, android.graphics.Typeface.BOLD);
-        closeBtn.setAllCaps(false);
-        closeBtn.setPadding(30, 14, 30, 14);
+        closeBtn.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurfaceVariant));
+        closeBtn.setTextSize(13);
+        closeBtn.setPadding(0, 20, 0, 0);
+        closeBtn.setGravity(Gravity.CENTER);
         closeBtn.setOnClickListener(v -> dialog.dismiss());
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        lp.topMargin = 24;
-        lp.gravity = Gravity.CENTER_HORIZONTAL;
-        closeBtn.setLayoutParams(lp);
         container.addView(closeBtn);
 
         dialog.show();
     }
 
-    private void setupLinks() {
-        setupLink(R.id.githubLink, "https://github.com/iicebearz");
-        setupLink(R.id.telegramLink, "https://t.me/iancloudID");
-        setupLink(R.id.tusukikanLink, "https://telegra.ph/Iam-a-IceBearr-02-02");
-    }
-
-    private void setupLink(int viewId, String url) {
-        TextView view = findViewById(viewId);
-        if (view != null) {
-            view.setOnClickListener(v -> {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                if (intent.resolveActivity(getPackageManager()) != null) {
-                    startActivity(intent);
-                } else {
-                    Toast.makeText(this, "Tidak ada aplikasi untuk membuka tautan", Toast.LENGTH_SHORT).show();
-                }
-            });
+    private void runEntranceAnimations() {
+        int[] ids = {R.id.heroCard, R.id.packageCard, R.id.deviceCard, R.id.supportedCard};
+        for (int id : ids) {
+            View v = findViewById(id);
+            if (v != null) v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_up));
         }
     }
 }

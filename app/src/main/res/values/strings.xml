@@ -1,21 +1,55 @@
 <resources>
     <string name="app_name">CrimsonFps</string>
     <string name="xposed_description">@iicebearz, join tg [https://t.me/iancloudID]</string>
-    <string name="xposed_activated">Module Activated</string>
-    <string name="xposed_unactivated">Module Unactivated</string>
 
     <string name="label_processor">Processor</string>
     <string name="label_system_version">System Version</string>
     <string name="label_system_abi">System ABI</string>
-    <string name="label_device_name">Device Name</string>
     <string name="label_device_model">Device Model</string>
-    <string name="label_build_number">Build Number</string>
-    <string name="label_os_build">OS Build</string>
     <string name="title_supported_apps">Supported Apps</string>
-    <string name="subtitle_supported_apps">Click to view supported apps and versions</string>
-    <string name="warning_text">Sometime Spoofing can\'t running in other device!!</string>
     <string name="title_support">Support me</string>
+
+    <string name="module_status_title">MODULE STATUS</string>
+    <string name="status_active">Active</string>
+    <string name="status_inactive">Inactive</string>
+    <string name="stable_build">Stable Build</string>
+    <string name="manage_apps">Input Package</string>
+    <string name="package_card_title">PACKAGE MANAGEMENT</string>
+    <string name="device_info_title">DEVICE INFORMATION</string>
+    <string name="label_android">Android Version</string>
+    <string name="updated_today">Updated Today</string>
+    <string name="user_title">USER</string>
+    <string name="label_brand">Brand</string>
+    <string name="label_security">Security Patch</string>
+    <string name="label_soc">SoC</string>
+    <string name="label_device_name">Device Name</string>
+    <string name="label_build">Build Number</string>
+    <string name="apps_supported_count">%d Supported Apps</string>
+    <string name="apps_ready_subtitle">Apps are ready to be managed</string>
+
+    <string name="add_package_subtitle">Add a package with its spoofed device</string>
+    <string name="add_package_title">Add Package</string>
+    <string name="add_package_hint">com.example.game</string>
+    <string name="add_package_device">Target Device</string>
+    <string name="btn_add">Add</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="added_toast">Package added</string>
+    <string name="duplicate_toast">Package already on this device</string>
+
+    <string name="title_credits">Credits</string>
+    <string name="credit_author">Crimson</string>
+    <string name="profile_username">@iicebearz</string>
+    <string name="profile_version">Stable 30/12/25 (v20)</string>
+    <string name="update_app">Update App — GitHub Releases</string>
+    <string name="support_section_title">SUPPORT &amp; CONNECT</string>
     <string name="link_github">Follow my Github</string>
+    <string name="link_github_sub">Stay updated on projects</string>
     <string name="link_telegram">Join our Telegram Channel</string>
-    <string name="link_tusukikan">give support with shortlink</string>
+    <string name="link_telegram_sub">Connect with the community</string>
+    <string name="link_tusukikan">Give support with shortlink</string>
+    <string name="link_tusukikan_sub">Your support means a lot</string>
+    <string name="user_profile_label">User Profile</string>
+
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_user">User</string>
 </resources>
