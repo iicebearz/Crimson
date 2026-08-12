@@ -29,6 +29,13 @@
 
     <string name="add_package_subtitle">Add a package with its spoofed device</string>
     <string name="add_package_title">Add Package</string>
+    <string name="btn_move">Pindah</string>
+    <string name="btn_delete">Hapus</string>
+    <string name="btn_restore">Restore</string>
+    <string name="btn_ok">OK</string>
+    <string name="title_deleted_section">DELETED</string>
+    <string name="search_hint">Search package / device</string>
+    <string name="manage_title">Manage Packages</string>
     <string name="add_package_hint">com.example.game</string>
     <string name="add_package_device">Target Device</string>
     <string name="btn_add">Add</string>

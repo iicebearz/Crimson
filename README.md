@@ -7,6 +7,8 @@ Xposed module for device spoofing with Lsposed
 - Spoof device model, brand, ABI, build info per-app
 - Material 3 dark UI with floating pill navigation
 - 568+ supported packages across 12 device profiles
+- Full package management: move packages between devices, delete, restore
+- Searchable, collapsible package manager screen (top app bar search, highlight matches)
 - Stable channel updates via GitHub Releases
 - add custom Device & add manual package
 
@@ -31,10 +33,11 @@ Xposed module for device spoofing with Lsposed
 
 ```
 app/src/main/java/io/iicebear/crimson/fps/
-├── MainActivity.java      # UI + Xposed hook wiring
+├── MainActivity.java      # Dashboard UI + Xposed hook wiring
+├── ManageActivity.java    # Full-screen package manager (search, move, delete, restore)
 ├── DeviceInfo.java        # Real device info reader
 ├── DeviceSpoof.java       # Xposed hook: Build fields
-├── SpoofCatalog.java      # Per-app spoof profiles
+├── SpoofCatalog.java      # Per-app spoof profiles + removed-package overlay
 ├── CatalogStore.java      # SharedPreferences persistence
 ├── UpdateChecker.java     # GitHub release check
 └── CRIMSOON.java          # Module entry (IXposedHookLoadPackage)

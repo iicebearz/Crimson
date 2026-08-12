@@ -3,14 +3,18 @@ package io.iicebear.crimson.fps;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 final class SpoofCatalog {
 
     private SpoofCatalog() {}
 
     private static final Map<String, List<String>> CUSTOM = new LinkedHashMap<>();
+
+    private static final Map<String, Set<String>> REMOVED = new LinkedHashMap<>();
 
     private static final Map<String, String> DEVICE_LABELS = new LinkedHashMap<>();
     static {
@@ -46,9 +50,10 @@ final class SpoofCatalog {
 
     static String findDeviceForPackage(String pkg) {
         for (Map.Entry<String, List<String>> e : CUSTOM.entrySet()) {
-            if (e.getValue().contains(pkg)) return e.getKey();
+            if (e.getValue().contains(pkg) && !isRemoved(e.getKey(), pkg)) return e.getKey();
         }
         for (Map.Entry<String, String[]> e : DEVICE_PACKAGES.entrySet()) {
+            if (isRemoved(e.getKey(), pkg)) continue;
             for (String candidate : e.getValue()) {
                 if (candidate.equals(pkg)) return e.getKey();
             }
@@ -61,7 +66,9 @@ final class SpoofCatalog {
         List<String> merged = new ArrayList<>();
         String[] builtin = DEVICE_PACKAGES.get(device);
         if (builtin != null) {
-            for (String p : builtin) merged.add(p);
+            for (String p : builtin) {
+                if (!isRemoved(device, p)) merged.add(p);
+            }
         }
         List<String> custom = CUSTOM.get(device);
         if (custom != null) {
@@ -117,6 +124,62 @@ final class SpoofCatalog {
         if (DeviceSpoof.isDevice(name)) return false;
         CUSTOM.computeIfAbsent(name, k -> new ArrayList<>());
         return true;
+    }
+
+    static boolean isRemoved(String device, String pkg) {
+        Set<String> r = REMOVED.get(device);
+        return r != null && r.contains(pkg);
+    }
+
+    static boolean removePackage(String device, String pkg) {
+        List<String> custom = CUSTOM.get(device);
+        if (custom != null && custom.remove(pkg)) return true;
+        REMOVED.computeIfAbsent(device, k -> new LinkedHashSet<>()).add(pkg);
+        return true;
+    }
+
+    static boolean movePackage(String from, String pkg, String to) {
+        removePackage(from, pkg);
+        return addPackage(to, pkg);
+    }
+
+    static boolean restorePackage(String device, String pkg) {
+        Set<String> r = REMOVED.get(device);
+        return r != null && r.remove(pkg);
+    }
+
+    static Map<String, List<String>> removedEntries() {
+        Map<String, List<String>> out = new LinkedHashMap<>();
+        for (Map.Entry<String, Set<String>> e : REMOVED.entrySet()) {
+            if (!e.getValue().isEmpty()) out.put(e.getKey(), new ArrayList<>(e.getValue()));
+        }
+        return out;
+    }
+
+    static String removedToBlob() {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, Set<String>> e : REMOVED.entrySet()) {
+            if (e.getValue().isEmpty()) continue;
+            sb.append(e.getKey()).append('=');
+            sb.append(String.join(",", e.getValue()));
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
+
+    static void fromRemovedBlob(String blob) {
+        REMOVED.clear();
+        if (blob == null || blob.isEmpty()) return;
+        for (String line : blob.split("\n")) {
+            int eq = line.indexOf('=');
+            if (eq <= 0) continue;
+            String device = line.substring(0, eq).trim();
+            Set<String> pkgs = new LinkedHashSet<>();
+            for (String p : line.substring(eq + 1).split(",")) {
+                if (!p.isEmpty()) pkgs.add(p.trim());
+            }
+            if (!pkgs.isEmpty()) REMOVED.put(device, pkgs);
+        }
     }
 
     static String devicesToBlob() {

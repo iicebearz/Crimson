@@ -6,22 +6,16 @@ import android.app.Dialog;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.animation.AnimationUtils;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -67,6 +61,12 @@ public class MainActivity extends Activity {
         runEntranceAnimations();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshAppCount();
+    }
+
     private void bindViews() {
         moduleStatus = findViewById(R.id.module_status);
         statusDot = findViewById(R.id.statusDot);
@@ -98,7 +98,6 @@ public class MainActivity extends Activity {
         moduleVersion.setText(BuildConfig.VERSION_NAME + " (v" + BuildConfig.VERSION_CODE + ")");
         ((TextView) findViewById(R.id.profileVersion))
                 .setText(BuildConfig.VERSION_NAME + " (v" + BuildConfig.VERSION_CODE + ")");
-        refreshAppCount();
 
         String hw = Build.HARDWARE.toLowerCase();
         String soc = hw.contains("qcom") || hw.contains("sm8") || hw.contains("sm7") ? "Qualcomm Snapdragon"
@@ -118,6 +117,7 @@ public class MainActivity extends Activity {
 
     private void refreshAppCount() {
         SpoofCatalog.fromBlob(CatalogStore.load(this));
+        SpoofCatalog.fromRemovedBlob(CatalogStore.loadRemoved(this));
         DeviceSpoof.fromBlob(CatalogStore.loadDevices(this));
         heroAppCount.setText(getString(R.string.apps_supported_count, SpoofCatalog.packageCount()));
     }
@@ -167,7 +167,7 @@ public class MainActivity extends Activity {
         setupLink(R.id.telegramLink, "https://t.me/iancloudID");
 
         manageButton.setOnClickListener(v -> showAddPackageDialog());
-        supportedCard.setOnClickListener(v -> showSupportedAppsDialog());
+        supportedCard.setOnClickListener(v -> startActivity(new Intent(this, ManageActivity.class)));
 
         View updateRow = findViewById(R.id.updateLink);
         if (updateRow != null) updateRow.setOnClickListener(v -> showUpdateDialog());
@@ -360,56 +360,6 @@ public class MainActivity extends Activity {
                 })
                 .setNegativeButton(R.string.btn_cancel, null)
                 .show();
-    }
-
-    private void showSupportedAppsDialog() {
-        Dialog dialog = new Dialog(this);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.popup_supported_apps);
-
-        Window window = dialog.getWindow();
-        if (window != null) {
-            WindowManager.LayoutParams lp = window.getAttributes();
-            lp.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.9f);
-            lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
-            window.setAttributes(lp);
-            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        }
-
-        LinearLayout container = dialog.findViewById(R.id.container);
-
-        android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder();
-        int titleStart = sb.length();
-        sb.append("Supported Apps by Spoofed Device\n\n");
-        sb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), titleStart, sb.length(), 0);
-
-        for (String device : SpoofCatalog.deviceNames()) {
-            int devStart = sb.length();
-            sb.append(device).append(":\n");
-            sb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), devStart, sb.length(), 0);
-
-            for (String pkg : SpoofCatalog.packagesFor(device)) {
-                sb.append("• ").append(pkg).append("\n");
-            }
-            sb.append("\n");
-        }
-
-        TextView content = new TextView(this);
-        content.setText(sb.toString());
-        content.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurface));
-        content.setTextSize(14);
-        container.addView(content);
-
-        TextView closeBtn = new TextView(this);
-        closeBtn.setText("Close");
-        closeBtn.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurfaceVariant));
-        closeBtn.setTextSize(13);
-        closeBtn.setPadding(0, 20, 0, 0);
-        closeBtn.setGravity(Gravity.CENTER);
-        closeBtn.setOnClickListener(v -> dialog.dismiss());
-        container.addView(closeBtn);
-
-        dialog.show();
     }
 
     private void runEntranceAnimations() {
