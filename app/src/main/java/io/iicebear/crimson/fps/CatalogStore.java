@@ -13,32 +13,38 @@ final class CatalogStore {
     static final String KEY_REMOVED = "removed_spoofs";
 
     static void save(Context ctx, String blob) {
-        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit().putString(KEY_BLOB, blob).apply();
+        put(ctx, KEY_BLOB, blob);
     }
 
     static void saveRemoved(Context ctx, String blob) {
-        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit().putString(KEY_REMOVED, blob).apply();
+        put(ctx, KEY_REMOVED, blob);
     }
 
     static void saveDevices(Context ctx, String blob) {
-        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit().putString(KEY_DEVICES, blob).apply();
+        put(ctx, KEY_DEVICES, blob);
     }
 
     static String load(Context ctx) {
-        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getString(KEY_BLOB, "");
+        return get(ctx, KEY_BLOB);
     }
 
     static String loadRemoved(Context ctx) {
-        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getString(KEY_REMOVED, "");
+        return get(ctx, KEY_REMOVED);
     }
 
     static String loadDevices(Context ctx) {
-        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getString(KEY_DEVICES, "");
+        return get(ctx, KEY_DEVICES);
+    }
+
+    private static SharedPreferences prefs(Context ctx) {
+        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    }
+
+    private static void put(Context ctx, String key, String blob) {
+        prefs(ctx).edit().putString(key, blob).apply();
+    }
+
+    private static String get(Context ctx, String key) {
+        return prefs(ctx).getString(key, "");
     }
 }

@@ -38,7 +38,7 @@ final class UpdateChecker {
                 conn.setReadTimeout(15000);
 
                 if (conn.getResponseCode() != 200) {
-                    postError(cb, "HTTP " + conn.getResponseCode());
+                    post(cb, "HTTP " + conn.getResponseCode());
                     return;
                 }
 
@@ -51,7 +51,7 @@ final class UpdateChecker {
                 JSONObject json = new JSONObject(sb.toString());
                 String tagName = json.optString("tag_name", "").trim();
                 if (tagName.isEmpty()) {
-                    postError(cb, "No version in release");
+                    post(cb, "No version in release");
                     return;
                 }
 
@@ -61,25 +61,29 @@ final class UpdateChecker {
                 String changelog = json.optString("body", "").trim();
 
                 if (latestCode <= 0) {
-                    postError(cb, "Cannot parse version from: " + tagName);
+                    post(cb, "Cannot parse version from: " + tagName);
                     return;
                 }
                 if (apkUrl == null || apkUrl.isEmpty()) {
-                    postError(cb, "No APK in release");
+                    post(cb, "No APK in release");
                     return;
                 }
 
-                new Handler(Looper.getMainLooper()).post(() ->
-                        cb.onResult(latestName, latestCode, apkUrl, changelog));
+                post(cb, latestName, latestCode, apkUrl, changelog);
 
             } catch (Exception e) {
-                postError(cb, e.getMessage());
+                post(cb, e.getMessage());
             }
         }).start();
     }
 
-    private static void postError(Callback cb, String msg) {
+
+    private static void post(Callback cb, String msg) {
         new Handler(Looper.getMainLooper()).post(() -> cb.onError(msg));
+    }
+
+    private static void post(Callback cb, String name, int code, String url, String log) {
+        new Handler(Looper.getMainLooper()).post(() -> cb.onResult(name, code, url, log));
     }
 
     private static int parseVersionCode(String tagName) {

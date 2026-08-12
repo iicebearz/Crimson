@@ -1,6 +1,7 @@
 package io.iicebear.crimson.fps;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -157,29 +158,13 @@ final class SpoofCatalog {
     }
 
     static String removedToBlob() {
-        StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, Set<String>> e : REMOVED.entrySet()) {
-            if (e.getValue().isEmpty()) continue;
-            sb.append(e.getKey()).append('=');
-            sb.append(String.join(",", e.getValue()));
-            sb.append('\n');
-        }
-        return sb.toString();
+        return writeBlob(REMOVED);
     }
 
     static void fromRemovedBlob(String blob) {
         REMOVED.clear();
-        if (blob == null || blob.isEmpty()) return;
-        for (String line : blob.split("\n")) {
-            int eq = line.indexOf('=');
-            if (eq <= 0) continue;
-            String device = line.substring(0, eq).trim();
-            Set<String> pkgs = new LinkedHashSet<>();
-            for (String p : line.substring(eq + 1).split(",")) {
-                if (!p.isEmpty()) pkgs.add(p.trim());
-            }
-            if (!pkgs.isEmpty()) REMOVED.put(device, pkgs);
-        }
+        readBlob(blob, (device, p) ->
+                REMOVED.computeIfAbsent(device, k -> new LinkedHashSet<>()).add(p));
     }
 
     static String devicesToBlob() {
@@ -202,8 +187,17 @@ final class SpoofCatalog {
     }
 
     static String toBlob() {
+        return writeBlob(CUSTOM);
+    }
+
+    static void fromBlob(String blob) {
+        clearCustom();
+        readBlob(blob, (device, p) -> addPackage(device, p));
+    }
+
+    private static String writeBlob(Map<String, ? extends Collection<String>> map) {
         StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, List<String>> e : CUSTOM.entrySet()) {
+        for (Map.Entry<String, ? extends Collection<String>> e : map.entrySet()) {
             if (e.getValue().isEmpty()) continue;
             sb.append(e.getKey()).append('=');
             sb.append(String.join(",", e.getValue()));
@@ -212,16 +206,14 @@ final class SpoofCatalog {
         return sb.toString();
     }
 
-    static void fromBlob(String blob) {
-        clearCustom();
+    private static void readBlob(String blob, java.util.function.BiConsumer<String, String> sink) {
         if (blob == null || blob.isEmpty()) return;
         for (String line : blob.split("\n")) {
             int eq = line.indexOf('=');
             if (eq <= 0) continue;
             String device = line.substring(0, eq).trim();
-            String[] pkgs = line.substring(eq + 1).split(",");
-            for (String p : pkgs) {
-                if (!p.isEmpty()) addPackage(device, p.trim());
+            for (String p : line.substring(eq + 1).split(",")) {
+                if (!p.isEmpty()) sink.accept(device, p.trim());
             }
         }
     }

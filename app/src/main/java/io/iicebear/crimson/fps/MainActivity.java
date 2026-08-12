@@ -10,7 +10,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.util.TypedValue;
 import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.widget.ArrayAdapter;
@@ -42,11 +41,6 @@ public class MainActivity extends Activity {
     private ImageView navDashboardIcon, navUserIcon;
     private TextView navDashboardLabel, navUserLabel;
 
-    private int themeColor(int attrRes) {
-        TypedValue tv = new TypedValue();
-        getTheme().resolveAttribute(attrRes, tv, true);
-        return tv.data;
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -201,7 +195,7 @@ public class MainActivity extends Activity {
     private void showUpdateDialog() {
         TextView statusView = new TextView(this);
         statusView.setText("Checking for updates...");
-        statusView.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurface));
+        statusView.setTextColor(Ui.themeColor(this, com.google.android.material.R.attr.colorOnSurface));
         statusView.setTextSize(15);
         statusView.setPadding(60, 40, 60, 20);
 

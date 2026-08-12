@@ -68,8 +68,8 @@ public class ManageActivity extends Activity {
         searchInput = new EditText(this);
         searchInput.setBackgroundResource(R.drawable.popup_search_bg);
         searchInput.setHint(R.string.search_hint);
-        searchInput.setTextColor(themeColor(com.google.android.material.R.attr.colorOnSurface));
-        searchInput.setHintTextColor(themeColor(com.google.android.material.R.attr.colorOnSurfaceVariant));
+        searchInput.setTextColor(Ui.themeColor(this, com.google.android.material.R.attr.colorOnSurface));
+        searchInput.setHintTextColor(Ui.themeColor(this, com.google.android.material.R.attr.colorOnSurfaceVariant));
         searchInput.setTextSize(14);
         searchInput.setPadding(dp(12), 0, dp(12), 0);
         searchInput.setSingleLine(true);
@@ -131,10 +131,12 @@ public class ManageActivity extends Activity {
         final String q = query == null ? "" : query.trim().toLowerCase();
         final boolean searching = !q.isEmpty();
         final List<Object> items = new java.util.ArrayList<>();
+
         for (String device : SpoofCatalog.deviceNames()) {
             String label = SpoofCatalog.label(device);
             String[] pkgs = SpoofCatalog.packagesFor(device);
             boolean deviceMatched = searching && label.toLowerCase().contains(q);
+
             if (searching) {
                 items.add(new HeaderRow(device, pkgs.length, deviceMatched));
                 for (String p : pkgs) {
@@ -155,6 +157,7 @@ public class ManageActivity extends Activity {
                 String label = SpoofCatalog.label(e.getKey());
                 for (String p : e.getValue()) {
                     if (searching && !label.toLowerCase().contains(q) && !p.toLowerCase().contains(q)) continue;
+                    if (SpoofCatalog.findDeviceForPackage(p) != null) continue;
                     if (!deletedHeader) {
                         items.add(null);
                         deletedHeader = true;
@@ -165,28 +168,12 @@ public class ManageActivity extends Activity {
         }
 
         list.setAdapter(new android.widget.BaseAdapter() {
-            @Override
-            public int getCount() {
-                return items.size();
-            }
+            @Override public int getCount() { return items.size(); }
+            @Override public Object getItem(int position) { return items.get(position); }
+            @Override public long getItemId(int position) { return position; }
+            @Override public int getViewTypeCount() { return 3; }
 
-            @Override
-            public Object getItem(int position) {
-                return items.get(position);
-            }
-
-            @Override
-            public long getItemId(int position) {
-                return position;
-            }
-
-            @Override
-            public int getViewTypeCount() {
-                return 3;
-            }
-
-            @Override
-            public int getItemViewType(int position) {
+            @Override public int getItemViewType(int position) {
                 Object item = items.get(position);
                 if (item == null) return TYPE_DELETED_HEADER;
                 if (item instanceof HeaderRow) return TYPE_HEADER;
@@ -196,28 +183,28 @@ public class ManageActivity extends Activity {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 Object item = items.get(position);
+
                 if (item == null) {
-                    TextView header = convertView instanceof TextView ? (TextView) convertView
-                            : new TextView(ManageActivity.this);
+                    TextView header = convertView instanceof TextView ? (TextView) convertView : new TextView(ManageActivity.this);
                     header.setText(getString(R.string.title_deleted_section));
-                    header.setTextColor(themeColor(com.google.android.material.R.attr.colorPrimary));
+                    header.setTextColor(Ui.themeColor(ManageActivity.this, com.google.android.material.R.attr.colorPrimary));
                     header.setTextSize(13);
                     header.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-                    header.setPadding(16, 24, 16, 8);
+                    header.setPadding(32, 48, 32, 16);
                     return header;
                 }
+
                 if (item instanceof HeaderRow) {
                     final HeaderRow row = (HeaderRow) item;
-                    TextView header = convertView instanceof TextView ? (TextView) convertView
-                            : new TextView(ManageActivity.this);
+                    TextView header = convertView instanceof TextView ? (TextView) convertView : new TextView(ManageActivity.this);
                     header.setText((searching || expandedDevices.contains(row.device) ? "▾ " : "▸ ")
                             + SpoofCatalog.label(row.device) + " (" + row.count + ")");
-                    header.setTextColor(themeColor(row.matched
+                    header.setTextColor(Ui.themeColor(ManageActivity.this, row.matched
                             ? com.google.android.material.R.attr.colorPrimary
                             : com.google.android.material.R.attr.colorOnSurface));
-                    header.setTextSize(14);
+                    header.setTextSize(15);
                     header.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-                    header.setPadding(16, 24, 16, 8);
+                    header.setPadding(32, 32, 32, 16);
                     header.setOnClickListener(v -> {
                         if (!expandedDevices.remove(row.device)) expandedDevices.add(row.device);
                         renderList(query);
@@ -227,37 +214,48 @@ public class ManageActivity extends Activity {
 
                 final PkgRow row = (PkgRow) item;
                 View v = convertView;
-                if (v == null || v.findViewById(R.id.rowPkg) == null) {
+                if (v == null || v.findViewById(R.id.rowMove) instanceof TextView) {
                     v = getLayoutInflater().inflate(R.layout.popup_row_package, parent, false);
                 }
-                ((TextView) v.findViewById(R.id.rowPkg)).setText(row.pkg);
-                TextView pkgText = v.findViewById(R.id.rowPkg);
-                pkgText.setTextColor(themeColor(row.matched
-                        ? com.google.android.material.R.attr.colorPrimary
-                        : com.google.android.material.R.attr.colorOnSurface));
-                pkgText.setTypeface(android.graphics.Typeface.DEFAULT, row.matched ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
 
-                TextView move = v.findViewById(R.id.rowMove);
-                TextView delete = v.findViewById(R.id.rowDelete);
-                move.setOnClickListener(null);
-                delete.setOnClickListener(null);
+                TextView pkgText = v.findViewById(R.id.rowPkg);
+                android.widget.ImageView moveBtn = v.findViewById(R.id.rowMove);
+                android.widget.ImageView deleteBtn = v.findViewById(R.id.rowDelete);
+
+                pkgText.setText(row.pkg);
+                moveBtn.setOnClickListener(null);
+                deleteBtn.setOnClickListener(null);
 
                 if (row.removed) {
-                    move.setText(R.string.btn_restore);
-                    move.setTextColor(themeColor(com.google.android.material.R.attr.colorPrimary));
-                    delete.setVisibility(View.GONE);
-                    move.setOnClickListener(l -> {
+                    moveBtn.setImageResource(android.R.drawable.ic_menu_revert);
+                    moveBtn.setColorFilter(Ui.themeColor(ManageActivity.this, com.google.android.material.R.attr.colorPrimary));
+                    deleteBtn.setVisibility(View.GONE);
+
+                    pkgText.setPaintFlags(pkgText.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+                    pkgText.setTextColor(Ui.themeColor(ManageActivity.this, com.google.android.material.R.attr.colorOutline));
+                    pkgText.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.NORMAL);
+
+                    moveBtn.setOnClickListener(l -> {
                         SpoofCatalog.restorePackage(row.device, row.pkg);
                         persist();
                     });
                 } else {
-                    move.setText(R.string.btn_move);
-                    delete.setVisibility(View.VISIBLE);
-                    delete.setText(R.string.btn_delete);
-                    move.setTextColor(themeColor(com.google.android.material.R.attr.colorPrimary));
-                    delete.setTextColor(getColor(R.color.error));
-                    move.setOnClickListener(l -> showMoveDialog(row.device, row.pkg));
-                    delete.setOnClickListener(l -> new MaterialAlertDialogBuilder(ManageActivity.this)
+                    moveBtn.setImageResource(android.R.drawable.ic_menu_send);
+                    moveBtn.setColorFilter(Ui.themeColor(ManageActivity.this, com.google.android.material.R.attr.colorPrimary));
+
+                    deleteBtn.setVisibility(View.VISIBLE);
+                    deleteBtn.setImageResource(android.R.drawable.ic_menu_delete);
+                    deleteBtn.setColorFilter(getColor(R.color.error));
+
+                    pkgText.setPaintFlags(pkgText.getPaintFlags() & (~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG));
+                    pkgText.setTextColor(Ui.themeColor(ManageActivity.this, row.matched
+                            ? com.google.android.material.R.attr.colorPrimary
+                            : com.google.android.material.R.attr.colorOnSurface));
+                    pkgText.setTypeface(android.graphics.Typeface.DEFAULT,
+                            row.matched ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+
+                    moveBtn.setOnClickListener(l -> showMoveDialog(row.device, row.pkg));
+                    deleteBtn.setOnClickListener(l -> new MaterialAlertDialogBuilder(ManageActivity.this)
                             .setTitle(R.string.btn_delete)
                             .setMessage("(" + row.pkg + ") dihapus dari (" + SpoofCatalog.label(row.device) + ")?")
                             .setPositiveButton(R.string.btn_ok, (d, w) -> {
@@ -296,9 +294,4 @@ public class ManageActivity extends Activity {
                 .show();
     }
 
-    private int themeColor(int attrRes) {
-        android.util.TypedValue tv = new android.util.TypedValue();
-        getTheme().resolveAttribute(attrRes, tv, true);
-        return tv.data;
-    }
 }

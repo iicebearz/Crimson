@@ -52,19 +52,15 @@ public class CRIMSOON implements IXposedHookLoadPackage {
             }
             Context ctxt = app.createPackageContext(
                     "io.iicebear.crimson.fps", Context.CONTEXT_IGNORE_SECURITY);
-            String blob;
-            String devices;
+            android.content.SharedPreferences prefs;
             try {
-                android.content.SharedPreferences prefs = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_WORLD_READABLE);
-                blob = prefs.getString(CatalogStore.KEY_BLOB, "");
-                devices = prefs.getString(CatalogStore.KEY_DEVICES, "");
+                prefs = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_WORLD_READABLE);
             } catch (SecurityException e) {
-                android.content.SharedPreferences prefs = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_PRIVATE);
-                blob = prefs.getString(CatalogStore.KEY_BLOB, "");
-                devices = prefs.getString(CatalogStore.KEY_DEVICES, "");
+                prefs = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_PRIVATE);
             }
-            SpoofCatalog.fromBlob(blob);
-            DeviceSpoof.fromBlob(devices);
+            SpoofCatalog.fromBlob(prefs.getString(CatalogStore.KEY_BLOB, ""));
+            SpoofCatalog.fromRemovedBlob(prefs.getString(CatalogStore.KEY_REMOVED, ""));
+            DeviceSpoof.fromBlob(prefs.getString(CatalogStore.KEY_DEVICES, ""));
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": custom spoofs unavailable: " + t.getMessage());
         }
