@@ -8,8 +8,9 @@ Xposed module for device spoofing with Lsposed
 - Material 3 dark UI with floating pill navigation
 - 568+ supported packages across 12 device profiles
 - Stable channel updates via GitHub Releases
+- add custom Device & add manual package
 
-## Supported Devices
+## Template Device
 
 | Device | Packages | Spoofed As |
 |--------|----------|------------|
