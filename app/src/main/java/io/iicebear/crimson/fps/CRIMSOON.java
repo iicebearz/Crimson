@@ -45,6 +45,11 @@ public class CRIMSOON implements IXposedHookLoadPackage {
         try {
             Context app = (Context) XposedHelpers.callStaticMethod(
                     XposedHelpers.findClass("android.app.ActivityThread", cl), "currentApplication");
+            if (app == null) {
+                Object at = XposedHelpers.callStaticMethod(
+                        XposedHelpers.findClass("android.app.ActivityThread", cl), "currentActivityThread");
+                app = (Context) XposedHelpers.callMethod(at, "getSystemContext");
+            }
             Context ctxt = app.createPackageContext(
                     "io.iicebear.crimson.fps", Context.CONTEXT_IGNORE_SECURITY);
             String blob;
