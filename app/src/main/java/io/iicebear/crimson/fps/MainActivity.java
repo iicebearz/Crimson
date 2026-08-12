@@ -6,12 +6,11 @@ import android.app.Dialog;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.Settings;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -27,12 +26,10 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.core.content.FileProvider;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-import java.io.File;
 
 public class MainActivity extends Activity {
 
@@ -103,17 +100,25 @@ public class MainActivity extends Activity {
                 .setText(BuildConfig.VERSION_NAME + " (v" + BuildConfig.VERSION_CODE + ")");
         refreshAppCount();
 
-        deviceProcessor.setText(DeviceInfo.soc() + " (" + DeviceInfo.board() + ")");
-        deviceAndroid.setText(DeviceInfo.android());
-        deviceAbi.setText(DeviceInfo.abi());
-        deviceModel.setText(DeviceInfo.model());
-        deviceName.setText(DeviceInfo.deviceName());
-        buildNumber.setText(DeviceInfo.buildNumber());
-        securityPatch.setText(DeviceInfo.securityPatch());
+        String hw = Build.HARDWARE.toLowerCase();
+        String soc = hw.contains("qcom") || hw.contains("sm8") || hw.contains("sm7") ? "Qualcomm Snapdragon"
+                : hw.contains("mt") || hw.contains("mediatek") || hw.contains("dimensity") ? "MediaTek"
+                : hw.contains("kirin") ? "HiSilicon Kirin"
+                : hw.contains("exynos") ? "Samsung Exynos"
+                : hw.contains("tensor") ? "Google Tensor"
+                : hw.contains("apple") ? "Apple Silicon" : "Unknown SoC";
+        deviceProcessor.setText(soc + " (" + Build.BOARD + ")");
+        deviceAndroid.setText(Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
+        deviceAbi.setText(Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : "N/A");
+        deviceModel.setText(Build.MANUFACTURER + " " + Build.MODEL);
+        deviceName.setText(Build.DEVICE);
+        buildNumber.setText(Build.DISPLAY);
+        securityPatch.setText(Build.VERSION.SECURITY_PATCH);
     }
 
     private void refreshAppCount() {
         SpoofCatalog.fromBlob(CatalogStore.load(this));
+        DeviceSpoof.fromBlob(CatalogStore.loadDevices(this));
         heroAppCount.setText(getString(R.string.apps_supported_count, SpoofCatalog.packageCount()));
     }
 
@@ -209,7 +214,7 @@ public class MainActivity extends Activity {
             @Override
             public void onResult(String versionName, int versionCode, String apkUrl, String changelog) {
                 d.dismiss();
-                if (!UpdateChecker.isNewer(versionCode, BuildConfig.VERSION_CODE)) {
+                if (!(versionCode > BuildConfig.VERSION_CODE)) {
                     Toast.makeText(MainActivity.this, "Up to date", Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -234,50 +239,21 @@ public class MainActivity extends Activity {
         Toast.makeText(this, "Downloading...", Toast.LENGTH_SHORT).show();
         long downloadId = UpdateChecker.downloadApk(this, apkUrl);
 
-        new Thread(() -> {
-            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-            boolean complete = false;
-            while (!complete) {
-                try { Thread.sleep(500); } catch (InterruptedException ignored) {}
-                DownloadManager.Query query = new DownloadManager.Query().setFilterById(downloadId);
-                Cursor cursor = dm.query(query);
-                if (cursor == null) break;
-                try {
-                    if (cursor.moveToFirst()) {
-                        int status = cursor.getInt(
-                                cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
-                        if (status == DownloadManager.STATUS_SUCCESSFUL) { complete = true; }
-                        else if (status == DownloadManager.STATUS_FAILED) { return; }
-                    }
-                } finally { cursor.close(); }
+        registerReceiver(new android.content.BroadcastReceiver() {
+            @Override
+            public void onReceive(android.content.Context context, Intent intent) {
+                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                if (id != downloadId) return;
+                context.unregisterReceiver(this);
+                DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                Uri uri = dm.getUriForDownloadedFile(id);
+                if (uri == null) return;
+                runOnUiThread(() -> installApk(uri));
             }
-
-            File file = getDownloadedFile(dm, downloadId);
-            if (file != null && file.exists()) runOnUiThread(() -> installApk(file));
-        }).start();
+        }, new android.content.IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
     }
 
-    private File getDownloadedFile(DownloadManager dm, long downloadId) {
-        DownloadManager.Query query = new DownloadManager.Query().setFilterById(downloadId);
-        Cursor cursor = dm.query(query);
-        if (cursor == null) return null;
-        try {
-            if (!cursor.moveToFirst()) return null;
-            String uriStr = cursor.getString(
-                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI));
-            Uri uri = Uri.parse(uriStr);
-            if ("file".equals(uri.getScheme())) return new File(uri.getPath());
-            File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            File[] apkFiles = dir.listFiles(f -> f.getName().endsWith(".apk"));
-            if (apkFiles == null || apkFiles.length == 0) return null;
-            return java.util.Arrays.stream(apkFiles)
-                    .max(java.util.Comparator.comparing(File::lastModified))
-                    .orElse(null);
-        } finally { cursor.close(); }
-    }
-
-    private void installApk(File file) {
-        Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file);
+    private void installApk(Uri uri) {
         Intent intent = new Intent(Intent.ACTION_VIEW)
                 .setDataAndType(uri, "application/vnd.android.package-archive")
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -300,6 +276,12 @@ public class MainActivity extends Activity {
         deviceSpinner.setAdapter(new ArrayAdapter<>(
                 this, android.R.layout.simple_spinner_item, SpoofCatalog.deviceNames()));
 
+        content.findViewById(R.id.addDeviceBtn).setOnClickListener(v -> {
+            showAddDeviceDialog();
+            deviceSpinner.setAdapter(new ArrayAdapter<>(
+                    this, android.R.layout.simple_spinner_item, SpoofCatalog.deviceNames()));
+        });
+
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.add_package_title)
                 .setView(content)
@@ -309,16 +291,72 @@ public class MainActivity extends Activity {
                         Toast.makeText(this, R.string.empty_package_toast, Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    if (SpoofCatalog.exists(pkg)) {
-                        Toast.makeText(this, R.string.duplicate_toast, Toast.LENGTH_SHORT).show();
+                    String device = SpoofCatalog.keyForLabel((String) deviceSpinner.getSelectedItem());
+                    if (existsInCatalog(pkg)) {
+                        String holder = SpoofCatalog.findDeviceForPackage(pkg);
+                        if (holder == null) holder = device;
+                        new AlertDialog.Builder(this)
+                                .setTitle("Duplicate")
+                                .setMessage("(" + pkg + ") sudah ada di (" + SpoofCatalog.label(holder) + ")")
+                                .setPositiveButton("OK", null)
+                                .show();
                         return;
                     }
-                    String device = SpoofCatalog.keyForLabel((String) deviceSpinner.getSelectedItem());
                     SpoofCatalog.addPackage(device, pkg);
                     CatalogStore.save(this, SpoofCatalog.toBlob());
                     refreshAppCount();
                     pkgInput.setText("");
-                    Toast.makeText(this, R.string.added_toast, Toast.LENGTH_SHORT).show();
+                    new AlertDialog.Builder(this)
+                            .setTitle("Success")
+                            .setMessage("(" + pkg + ") berhasil di input ke (" + SpoofCatalog.label(device) + ")")
+                            .setPositiveButton("OK", null)
+                            .show();
+                })
+                .setNegativeButton(R.string.btn_cancel, null)
+                .show();
+    }
+
+    private boolean existsInCatalog(String pkg) {
+        if (SpoofCatalog.exists(pkg)) return true;
+        for (String s : getResources().getStringArray(R.array.scope)) {
+            if (s.equals(pkg)) return true;
+        }
+        return false;
+    }
+
+    private void showAddDeviceDialog() {
+        View content = getLayoutInflater().inflate(R.layout.popup_add_device, null);
+        EditText nameInput = content.findViewById(R.id.deviceNameInput);
+        EditText brandInput = content.findViewById(R.id.deviceBrandInput);
+        EditText manufacturerInput = content.findViewById(R.id.deviceManufacturerInput);
+        EditText modelInput = content.findViewById(R.id.deviceModelInput);
+        EditText deviceInput = content.findViewById(R.id.deviceDeviceInput);
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.add_device_title)
+                .setView(content)
+                .setPositiveButton(R.string.btn_add, (d, w) -> {
+                    String name = nameInput.getText().toString().trim();
+                    String brand = brandInput.getText().toString().trim();
+                    String manufacturer = manufacturerInput.getText().toString().trim();
+                    String model = modelInput.getText().toString().trim();
+                    String device = deviceInput.getText().toString().trim();
+                    if (name.isEmpty() || brand.isEmpty() || manufacturer.isEmpty() || model.isEmpty() || device.isEmpty()) {
+                        Toast.makeText(this, R.string.device_empty, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (!SpoofCatalog.registerDevice(name)) {
+                        Toast.makeText(this, R.string.device_exists, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    java.util.Map<String, String> props = new java.util.HashMap<>();
+                    props.put("BRAND", brand);
+                    props.put("MANUFACTURER", manufacturer);
+                    props.put("MODEL", model);
+                    props.put("DEVICE", device);
+                    DeviceSpoof.addCustom(name, props);
+                    CatalogStore.saveDevices(this, SpoofCatalog.devicesToBlob());
+                    Toast.makeText(this, R.string.device_added, Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton(R.string.btn_cancel, null)
                 .show();

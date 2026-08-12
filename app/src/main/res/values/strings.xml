@@ -33,9 +33,18 @@
     <string name="add_package_device">Target Device</string>
     <string name="btn_add">Add</string>
     <string name="btn_cancel">Cancel</string>
-    <string name="added_toast">input package berhasil</string>
-    <string name="duplicate_toast">package sudah ada</string>
     <string name="empty_package_toast">Package tidak boleh kosong</string>
+
+    <string name="add_device_btn">Tambah Device Baru</string>
+    <string name="add_device_title">Add Device</string>
+    <string name="add_device_name">Device Name</string>
+    <string name="add_device_brand">Brand</string>
+    <string name="add_device_manufacturer">Manufacturer</string>
+    <string name="add_device_model">Model</string>
+    <string name="add_device_device">Device</string>
+    <string name="device_added">device berhasil di tambahkan</string>
+    <string name="device_exists">device sudah ada</string>
+    <string name="device_empty">semua field wajib diisi</string>
 
     <string name="title_credits">Credits</string>
     <string name="credit_author">Crimson</string>

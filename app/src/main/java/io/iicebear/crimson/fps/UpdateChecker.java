@@ -92,10 +92,6 @@ final class UpdateChecker {
         }
     }
 
-    static boolean isNewer(int latestCode, int currentCode) {
-        return latestCode > currentCode;
-    }
-
     private static String findApkUrl(JSONObject json) {
         JSONArray assets = json.optJSONArray("assets");
         if (assets == null) return null;

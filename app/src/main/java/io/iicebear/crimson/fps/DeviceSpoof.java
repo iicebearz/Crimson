@@ -13,6 +13,8 @@ final class DeviceSpoof {
 
     private static final String TAG = "CRIMSOON";
 
+    private static final Map<String, Map<String, String>> CUSTOM = new LinkedHashMap<>();
+
     private static final Map<String, Map<String, String>> DEVICES = new LinkedHashMap<>();
 
     static {
@@ -48,19 +50,52 @@ final class DeviceSpoof {
         return m;
     }
 
-    static void apply(String device) {
+    static String apply(String device) {
         Map<String, String> p = DEVICES.get(device);
-        if (p == null) return;
-        for (Map.Entry<String, String> e : p.entrySet()) setProp(e.getKey(), e.getValue());
+        if (p == null) p = CUSTOM.get(device);
+        if (p == null) return device + ": unknown device";
+        for (Map.Entry<String, String> e : p.entrySet()) {
+            String err = setProp(e.getKey(), e.getValue());
+            if (err != null) return e.getKey() + ": " + err;
+        }
+        return null;
     }
 
-    private static void setProp(String key, Object value) {
+    private static String setProp(String key, Object value) {
         try {
             Field f = Build.class.getDeclaredField(key);
-            if (!f.getType().isAssignableFrom(value.getClass())) return;
+            if (!f.getType().isAssignableFrom(value.getClass())) return "type mismatch";
             f.setAccessible(true);
             f.set(null, value);
-        } catch (Exception ignored) {
+            return null;
+        } catch (Exception e) {
+            return e.getClass().getSimpleName();
+        }
+    }
+
+    static boolean isDevice(String name) {
+        return DEVICES.containsKey(name) || CUSTOM.containsKey(name);
+    }
+
+    static void addCustom(String name, Map<String, String> props) {
+        CUSTOM.put(name, props);
+    }
+
+    static Map<String, Map<String, String>> customDevices() {
+        return CUSTOM;
+    }
+
+    static void fromBlob(String blob) {
+        CUSTOM.clear();
+        if (blob == null || blob.isEmpty()) return;
+        for (String line : blob.split("\n")) {
+            int eq = line.indexOf('=');
+            if (eq <= 0) continue;
+            String name = line.substring(0, eq).trim();
+            String[] kv = line.substring(eq + 1).split(",");
+            Map<String, String> props = new HashMap<>();
+            for (int i = 0; i + 1 < kv.length; i += 2) props.put(kv[i].trim(), kv[i + 1].trim());
+            addCustom(name, props);
         }
     }
 }

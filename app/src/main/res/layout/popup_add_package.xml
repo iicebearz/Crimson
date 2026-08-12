@@ -36,4 +36,15 @@
         android:layout_height="48dp"
         android:layout_marginTop="4dp" />
 
+    <TextView
+        android:id="@+id/addDeviceBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_gravity="center_horizontal"
+        android:text="@string/add_device_btn"
+        android:textColor="?attr/colorPrimary"
+        android:textSize="13sp"
+        android:padding="4dp" />
+
 </LinearLayout>

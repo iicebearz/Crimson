@@ -19,8 +19,12 @@ public class CRIMSOON implements IXposedHookLoadPackage {
 
         String targetDevice = SpoofCatalog.findDeviceForPackage(pkg);
         if (targetDevice != null) {
-            XposedBridge.log(TAG + ": Spoofing " + pkg + " as " + targetDevice);
-            DeviceSpoof.apply(targetDevice);
+            String err = DeviceSpoof.apply(targetDevice);
+            if (err == null) {
+                XposedBridge.log("(SPOOFING DEVICE: " + targetDevice + " - (" + pkg + ") DONE)");
+            } else {
+                XposedBridge.log("(SPOOFING DEVICE: " + targetDevice + " - (" + pkg + ") FAILED) " + err);
+            }
         }
 
         if ("io.iicebear.crimson.fps".equals(pkg)) {
@@ -44,14 +48,18 @@ public class CRIMSOON implements IXposedHookLoadPackage {
             Context ctxt = app.createPackageContext(
                     "io.iicebear.crimson.fps", Context.CONTEXT_IGNORE_SECURITY);
             String blob;
+            String devices;
             try {
-                blob = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_WORLD_READABLE)
-                        .getString(CatalogStore.KEY_BLOB, "");
+                android.content.SharedPreferences prefs = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_WORLD_READABLE);
+                blob = prefs.getString(CatalogStore.KEY_BLOB, "");
+                devices = prefs.getString(CatalogStore.KEY_DEVICES, "");
             } catch (SecurityException e) {
-                blob = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_PRIVATE)
-                        .getString(CatalogStore.KEY_BLOB, "");
+                android.content.SharedPreferences prefs = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_PRIVATE);
+                blob = prefs.getString(CatalogStore.KEY_BLOB, "");
+                devices = prefs.getString(CatalogStore.KEY_DEVICES, "");
             }
             SpoofCatalog.fromBlob(blob);
+            DeviceSpoof.fromBlob(devices);
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": custom spoofs unavailable: " + t.getMessage());
         }

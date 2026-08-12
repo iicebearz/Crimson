@@ -78,6 +78,9 @@ final class SpoofCatalog {
         for (String d : CUSTOM.keySet()) {
             if (!names.contains(label(d))) names.add(label(d));
         }
+        for (String d : DeviceSpoof.customDevices().keySet()) {
+            if (!names.contains(d)) names.add(d);
+        }
         return names.toArray(new String[0]);
     }
 
@@ -108,6 +111,27 @@ final class SpoofCatalog {
         CUSTOM.computeIfAbsent(device, k -> new ArrayList<>());
         CUSTOM.get(device).add(pkg);
         return true;
+    }
+
+    static boolean registerDevice(String name) {
+        if (DeviceSpoof.isDevice(name)) return false;
+        CUSTOM.computeIfAbsent(name, k -> new ArrayList<>());
+        return true;
+    }
+
+    static String devicesToBlob() {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, Map<String, String>> e : DeviceSpoof.customDevices().entrySet()) {
+            sb.append(e.getKey()).append('=');
+            List<String> kv = new ArrayList<>();
+            for (Map.Entry<String, String> p : e.getValue().entrySet()) {
+                kv.add(p.getKey());
+                kv.add(p.getValue());
+            }
+            sb.append(String.join(",", kv));
+            sb.append('\n');
+        }
+        return sb.toString();
     }
 
     static void clearCustom() {

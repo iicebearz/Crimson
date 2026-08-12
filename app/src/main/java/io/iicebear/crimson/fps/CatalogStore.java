@@ -9,14 +9,25 @@ final class CatalogStore {
 
     static final String PREFS = "crimson_prefs";
     static final String KEY_BLOB = "custom_spoofs";
+    static final String KEY_DEVICES = "custom_devices";
 
     static void save(Context ctx, String blob) {
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit().putString(KEY_BLOB, blob).apply();
     }
 
+    static void saveDevices(Context ctx, String blob) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit().putString(KEY_DEVICES, blob).apply();
+    }
+
     static String load(Context ctx) {
         return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .getString(KEY_BLOB, "");
+    }
+
+    static String loadDevices(Context ctx) {
+        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString(KEY_DEVICES, "");
     }
 }
