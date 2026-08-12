@@ -17,10 +17,10 @@ Xposed module for device spoofing with Lsposed
 | Lenovo Legion | 41 | `TB-9707F` (Lenovo/qcom) |
 | ASUS ROG 6 | 54 | `ASUS_AI2201` (Asus/qcom) |
 | Google Pixel 9 Pro | 49 | `Pixel 9 Pro XL` (Google/komodo) |
-| Nubia | 54 | `NX769J` (nubia/qti) |
+| Nubia | 56 | `NX769J` (nubia/qti) |
 | OnePlus 12 Pro | 50 | `PJD110` (OnePlus/qcom) |
 | OnePlus 13 | 53 | `PJZ110` (OnePlus/qcom) |
-| ROG 9 PRO | 41 | `ASUSAI2501` (Asus/qcom) |
+| ROG 9 PRO | 39 | `ASUSAI2501` (Asus/qcom) |
 | OPPO Find X7 Ultra | 46 | `PHY110` (oppo/qcom) |
 | Xiaomi 15 Ultra | 43 | `25019PNF3C` (Xiaomi/xuanyuan) |
 | Poco F7 Ultra | 44 | `24122RKC7G` (Redmi/miro) |
