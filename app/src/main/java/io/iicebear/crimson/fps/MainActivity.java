@@ -41,17 +41,23 @@ public class MainActivity extends Activity {
     private ImageView navDashboardIcon, navUserIcon;
     private TextView navDashboardLabel, navUserLabel;
 
+    private TextView logContent;
+    private String lastXposed = "";
+    private static final int REQ_EXPORT_LOG = 1001;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        LogStore.init(this);
         bindViews();
         setDeviceInformation();
         setModuleStatus();
         setupLinks();
         setupTopBar();
         setupBottomNav();
+        setupLogCard();
         runEntranceAnimations();
     }
 
@@ -59,6 +65,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         refreshAppCount();
+        refreshLog();
     }
 
     private void bindViews() {
@@ -77,6 +84,8 @@ public class MainActivity extends Activity {
 
         supportedCard = findViewById(R.id.supportedCard);
         manageButton = findViewById(R.id.manageButton);
+
+        logContent = findViewById(R.id.logContent);
 
         dashboardView = findViewById(R.id.dashboardView);
         userView = findViewById(R.id.userView);
@@ -138,6 +147,67 @@ public class MainActivity extends Activity {
     private void setupBottomNav() {
         navDashboardItem.setOnClickListener(v -> showPage(true));
         navUserItem.setOnClickListener(v -> showPage(false));
+    }
+
+    private void setupLogCard() {
+        findViewById(R.id.logRefresh).setOnClickListener(v -> refreshLog());
+        findViewById(R.id.logExport).setOnClickListener(v -> exportLog());
+    }
+
+    private void refreshLog() {
+        StringBuilder sb = new StringBuilder();
+        for (String l : LogStore.readAll()) sb.append(l).append('\n');
+        logContent.setText(sb.length() == 0 ? getString(R.string.log_empty) : sb.toString());
+        new Thread(() -> {
+            String xposed = readXposedLog();
+            if (xposed.isEmpty()) return;
+            lastXposed = xposed;
+            runOnUiThread(() -> logContent.setText(logContent.getText() + "\n--- Xposed ---\n" + xposed));
+        }).start();
+    }
+
+    private String readXposedLog() {
+        StringBuilder sb = new StringBuilder();
+        try {
+            Process p = Runtime.getRuntime().exec(new String[]{"logcat", "-d", "-s", "XposedBridge"});
+            java.io.BufferedReader r = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(p.getInputStream()));
+            String line;
+            int n = 0;
+            while ((line = r.readLine()) != null) {
+                if ((line.contains("CRIMSOON") || line.contains("SPOOFING")) && n++ < 40) {
+                    sb.append(line).append('\n');
+                }
+            }
+            p.waitFor();
+        } catch (Exception ignored) {}
+        return sb.toString();
+    }
+
+    private void exportLog() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TITLE, "crimson-log.txt");
+        startActivityForResult(intent, REQ_EXPORT_LOG);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQ_EXPORT_LOG || resultCode != RESULT_OK
+                || data == null || data.getData() == null) return;
+        try {
+            StringBuilder sb = new StringBuilder();
+            for (String l : LogStore.readAll()) sb.append(l).append('\n');
+            if (!lastXposed.isEmpty()) sb.append("\n--- Xposed ---\n").append(lastXposed);
+            java.io.OutputStream os = getContentResolver().openOutputStream(data.getData());
+            os.write(sb.toString().getBytes());
+            os.close();
+            Toast.makeText(this, R.string.log_exported, Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.log_export_failed, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void showPage(boolean dashboard) {
@@ -298,6 +368,7 @@ public class MainActivity extends Activity {
                     }
                     SpoofCatalog.addPackage(device, pkg);
                     CatalogStore.save(this, SpoofCatalog.toBlob());
+                    LogStore.log("ADD package " + pkg + " → " + SpoofCatalog.label(device));
                     refreshAppCount();
                     pkgInput.setText("");
                     new AlertDialog.Builder(this)
@@ -350,6 +421,7 @@ public class MainActivity extends Activity {
                     props.put("DEVICE", device);
                     DeviceSpoof.addCustom(name, props);
                     CatalogStore.saveDevices(this, SpoofCatalog.devicesToBlob());
+                    LogStore.log("ADD device " + name);
                     Toast.makeText(this, R.string.device_added, Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton(R.string.btn_cancel, null)
@@ -357,7 +429,7 @@ public class MainActivity extends Activity {
     }
 
     private void runEntranceAnimations() {
-        int[] ids = {R.id.heroCard, R.id.packageCard, R.id.deviceCard, R.id.supportedCard};
+        int[] ids = {R.id.heroCard, R.id.packageCard, R.id.logCard, R.id.deviceCard, R.id.supportedCard};
         for (int id : ids) {
             View v = findViewById(id);
             if (v != null) v.startAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_up));

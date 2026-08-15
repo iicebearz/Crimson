@@ -30,6 +30,7 @@
     <string name="add_package_subtitle">Add a package with its spoofed device</string>
     <string name="add_package_title">Add Package</string>
     <string name="btn_move">Pindah</string>
+    <string name="move_failed">Gagal: target sudah punya package ini</string>
     <string name="btn_delete">Hapus</string>
     <string name="btn_restore">Restore</string>
     <string name="btn_ok">OK</string>
@@ -68,4 +69,11 @@
 
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_user">User</string>
+
+    <string name="log_card_title">ACTIVITY LOG</string>
+    <string name="log_refresh">Refresh</string>
+    <string name="log_export">Export</string>
+    <string name="log_empty">No logs yet</string>
+    <string name="log_exported">Log exported</string>
+    <string name="log_export_failed">Export failed</string>
 </resources>

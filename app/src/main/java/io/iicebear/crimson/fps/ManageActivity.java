@@ -9,6 +9,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -28,6 +29,7 @@ public class ManageActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage);
+        LogStore.init(this);
         list = findViewById(R.id.container);
         toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -237,6 +239,7 @@ public class ManageActivity extends Activity {
 
                     moveBtn.setOnClickListener(l -> {
                         SpoofCatalog.restorePackage(row.device, row.pkg);
+                        LogStore.log("RESTORE " + row.pkg + " → " + SpoofCatalog.label(row.device));
                         persist();
                     });
                 } else {
@@ -260,6 +263,7 @@ public class ManageActivity extends Activity {
                             .setMessage("(" + row.pkg + ") dihapus dari (" + SpoofCatalog.label(row.device) + ")?")
                             .setPositiveButton(R.string.btn_ok, (d, w) -> {
                                 SpoofCatalog.removePackage(row.device, row.pkg);
+                                LogStore.log("DELETE " + row.pkg + " from " + SpoofCatalog.label(row.device));
                                 persist();
                             })
                             .setNegativeButton(R.string.btn_cancel, null)
@@ -287,7 +291,11 @@ public class ManageActivity extends Activity {
                 .setPositiveButton(R.string.btn_ok, (d, w) -> {
                     String to = SpoofCatalog.keyForLabel((String) deviceSpinner.getSelectedItem());
                     if (to.equals(from)) return;
-                    SpoofCatalog.movePackage(from, pkg, to);
+                    if (!SpoofCatalog.movePackage(from, pkg, to)) {
+                        Toast.makeText(ManageActivity.this, R.string.move_failed, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    LogStore.log("MOVE " + pkg + " " + SpoofCatalog.label(from) + " → " + SpoofCatalog.label(to));
                     persist();
                 })
                 .setNegativeButton(R.string.btn_cancel, null)

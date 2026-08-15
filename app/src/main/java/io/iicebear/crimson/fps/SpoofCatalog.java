@@ -115,14 +115,18 @@ final class SpoofCatalog {
     }
 
     static boolean addPackage(String device, String pkg) {
-        if (exists(pkg)) return false;
-        CUSTOM.computeIfAbsent(device, k -> new ArrayList<>());
-        CUSTOM.get(device).add(pkg);
+        device = keyForLabel(device);
+        for (List<String> l : CUSTOM.values()) {
+            if (l.contains(pkg)) return false;
+        }
+        String[] builtin = DEVICE_PACKAGES.get(device);
+        if (builtin != null && java.util.Arrays.asList(builtin).contains(pkg)) return false;
+        CUSTOM.computeIfAbsent(device, k -> new ArrayList<>()).add(pkg);
         return true;
     }
 
     static boolean registerDevice(String name) {
-        if (DeviceSpoof.isDevice(name)) return false;
+        if (DeviceSpoof.isDevice(name) || CUSTOM.containsKey(name)) return false;
         CUSTOM.computeIfAbsent(name, k -> new ArrayList<>());
         return true;
     }
@@ -133,6 +137,7 @@ final class SpoofCatalog {
     }
 
     static boolean removePackage(String device, String pkg) {
+        device = keyForLabel(device);
         List<String> custom = CUSTOM.get(device);
         if (custom != null && custom.remove(pkg)) return true;
         REMOVED.computeIfAbsent(device, k -> new LinkedHashSet<>()).add(pkg);
@@ -140,11 +145,20 @@ final class SpoofCatalog {
     }
 
     static boolean movePackage(String from, String pkg, String to) {
+        from = keyForLabel(from);
+        to = keyForLabel(to);
+        if (from.equals(to)) return false;
+        String[] builtin = DEVICE_PACKAGES.get(to);
+        if (builtin != null && java.util.Arrays.asList(builtin).contains(pkg)) return false;
+        List<String> target = CUSTOM.get(to);
+        if (target != null && target.contains(pkg)) return false;
         removePackage(from, pkg);
-        return addPackage(to, pkg);
+        CUSTOM.computeIfAbsent(to, k -> new ArrayList<>()).add(pkg);
+        return true;
     }
 
     static boolean restorePackage(String device, String pkg) {
+        device = keyForLabel(device);
         Set<String> r = REMOVED.get(device);
         return r != null && r.remove(pkg);
     }

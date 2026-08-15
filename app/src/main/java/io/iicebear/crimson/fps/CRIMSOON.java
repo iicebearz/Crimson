@@ -52,15 +52,23 @@ public class CRIMSOON implements IXposedHookLoadPackage {
             }
             Context ctxt = app.createPackageContext(
                     "io.iicebear.crimson.fps", Context.CONTEXT_IGNORE_SECURITY);
-            android.content.SharedPreferences prefs;
-            try {
-                prefs = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_WORLD_READABLE);
-            } catch (SecurityException e) {
-                prefs = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_PRIVATE);
+            String custom = CatalogStore.loadFile(ctxt, "custom.txt");
+            String removed = CatalogStore.loadFile(ctxt, "removed.txt");
+            String devices = CatalogStore.loadFile(ctxt, "devices.txt");
+            if (custom == null) {
+                android.content.SharedPreferences prefs;
+                try {
+                    prefs = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_WORLD_READABLE);
+                } catch (SecurityException e) {
+                    prefs = ctxt.getSharedPreferences(CatalogStore.PREFS, Context.MODE_PRIVATE);
+                }
+                custom = prefs.getString(CatalogStore.KEY_BLOB, "");
+                removed = prefs.getString(CatalogStore.KEY_REMOVED, "");
+                devices = prefs.getString(CatalogStore.KEY_DEVICES, "");
             }
-            SpoofCatalog.fromBlob(prefs.getString(CatalogStore.KEY_BLOB, ""));
-            SpoofCatalog.fromRemovedBlob(prefs.getString(CatalogStore.KEY_REMOVED, ""));
-            DeviceSpoof.fromBlob(prefs.getString(CatalogStore.KEY_DEVICES, ""));
+            SpoofCatalog.fromBlob(custom);
+            SpoofCatalog.fromRemovedBlob(removed);
+            DeviceSpoof.fromBlob(devices);
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": custom spoofs unavailable: " + t.getMessage());
         }
